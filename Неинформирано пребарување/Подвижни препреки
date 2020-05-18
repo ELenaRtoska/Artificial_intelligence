@@ -1,0 +1,562 @@
+# Vcituvanje na vleznite argumenti za test primerite
+
+CoveceRedica = int(input()) + 1
+CoveceKolona = int(input()) + 1
+KukaRedica = int(input()) + 1
+KukaKolona = int(input()) + 1
+
+import sys
+import bisect
+
+infinity = float('inf')
+
+
+class Queue:
+    
+
+    def __init__(self):
+        raise NotImplementedError
+
+    def extend(self, items):
+        for item in items:
+            self.append(item)
+
+
+def Stack():
+    
+    return []
+
+
+class FIFOQueue(Queue):
+    
+
+    def __init__(self):
+        self.A = []
+        self.start = 0
+
+    def append(self, item):
+        self.A.append(item)
+
+    def __len__(self):
+        return len(self.A) - self.start
+
+    def extend(self, items):
+        self.A.extend(items)
+
+    def pop(self):
+        e = self.A[self.start]
+        self.start += 1
+        if self.start > 5 and self.start > len(self.A) / 2:
+            self.A = self.A[self.start:]
+            self.start = 0
+        return e
+
+    def __contains__(self, item):
+        return item in self.A[self.start:]
+
+
+class PriorityQueue(Queue):
+   
+
+    def __init__(self, order=min, f=lambda x: x):
+        self.A = []
+        self.order = order
+        self.f = f
+
+    def append(self, item):
+        bisect.insort(self.A, (self.f(item), item))
+
+    def __len__(self):
+        return len(self.A)
+
+    def pop(self):
+        if self.order == min:
+            return self.A.pop(0)[1]
+        else:
+            return self.A.pop()[1]
+
+    def __contains__(self, item):
+        return any(item == pair[1] for pair in self.A)
+
+    def __getitem__(self, key):
+        for _, item in self.A:
+            if item == key:
+                return item
+
+    def __delitem__(self, key):
+        for i, (value, item) in enumerate(self.A):
+            if item == key:
+                self.A.pop(i)
+
+
+
+
+class Problem:
+
+    def __init__(self, initial, goal=None):
+        self.initial = initial
+        self.goal = goal
+
+    def successor(self, state):
+        """За дадена состојба, врати речник од парови {акција : состојба}
+                достапни од оваа состојба. Ако има многу следбеници, употребете
+                итератор кој би ги генерирал следбениците еден по еден, наместо да
+                ги генерирате сите одеднаш.
+
+                :param state: дадена состојба
+                :return:  речник од парови {акција : состојба} достапни од оваа
+                          состојба
+                :rtype: dict
+                """
+        raise NotImplementedError
+
+    def actions(self, state):
+        """За дадена состојба state, врати листа од сите акции што може да
+                се применат над таа состојба
+
+                :param state: дадена состојба
+                :return: листа на акции
+                :rtype: list
+                """
+        raise NotImplementedError
+
+    def result(self, state, action):
+        """За дадена состојба state и акција action, врати ја состојбата
+        што се добива со примена на акцијата над состојбата
+
+        :param state: дадена состојба
+        :param action: дадена акција
+        :return: резултантна состојба
+        """
+        raise NotImplementedError
+
+    def goal_test(self, state):
+        """Врати True ако state е целна состојба. Даденава имплементација
+                на методот директно ја споредува state со self.goal, како што е
+                специфицирана во конструкторот. Имплементирајте го овој метод ако
+                проверката со една целна состојба self.goal не е доволна.
+
+                :param state: дадена состојба
+                :return: дали дадената состојба е целна состојба
+                :rtype: bool
+                """
+        return state == self.goal
+
+    def path_cost(self, c, state1, action, state2):
+        """Врати ја цената на решавачкиот пат кој пристигнува во состојбата
+        state2 од состојбата state1 преку акцијата action, претпоставувајќи
+        дека цената на патот до состојбата state1 е c. Ако проблемот е таков
+        што патот не е важен, оваа функција ќе ја разгледува само состојбата
+        state2. Ако патот е важен, ќе ја разгледува цената c и можеби и
+        state1 и action. Даденава имплементација му доделува цена 1 на секој
+        чекор од патот.
+
+        :param c: цена на патот до состојбата state1
+        :param state1: дадена моментална состојба
+        :param action: акција која треба да се изврши
+        :param state2: состојба во која треба да се стигне
+        :return: цена на патот по извршување на акцијата
+        :rtype: float
+        """
+        return c + 1
+
+    def value(self):
+        """За проблеми на оптимизација, секоја состојба си има вредност. 
+        Hill-climbing и сличните алгоритми се обидуваат да ја максимизираат
+        оваа вредност.
+
+        :return: вредност на состојба
+        :rtype: float
+        """
+        raise NotImplementedError
+
+
+"""
+Дефинирање на класата за структурата на јазел од пребарување.
+Класата Node не се наследува
+"""
+
+class Node:
+
+
+    def __init__(self, state, parent=None, action=None, path_cost=0):
+        """Креирај јазол од пребарувачкото дрво, добиен од parent со примена
+                на акцијата action
+
+                :param state: моментална состојба (current state)
+                :param parent: родителска состојба (parent state)
+                :param action: акција (action)
+                :param path_cost: цена на патот (path cost)
+                """
+        self.state = state
+        self.parent = parent
+        self.action = action
+        self.path_cost = path_cost
+        self.depth = 0
+        if parent:
+            self.depth = parent.depth + 1
+
+    def __repr__(self):
+        return "<Node %s>" % (self.state,)
+
+    def __lt__(self, node):
+        return self.state < node.state
+
+    def expand(self, problem):
+        """Излистај ги јазлите достапни во еден чекор од овој јазол.
+
+        :param problem: даден проблем
+        :return: листа на достапни јазли во еден чекор
+        :rtype: list(Node)
+        """
+        return [self.child_node(problem, action)
+                for action in problem.actions(self.state)]
+
+    def child_node(self, problem, action):
+        """Дете јазел
+
+        :param problem: даден проблем
+        :param action: дадена акција
+        :return: достапен јазел според дадената акција
+        :rtype: Node
+        """
+        next = problem.result(self.state, action)
+        return Node(next, self, action,
+                    problem.path_cost(self.path_cost, self.state,
+                                      action, next))
+
+    def solution(self):
+        """Врати ја секвенцата од акции за да се стигне од коренот до овој јазол.
+
+        :return: секвенцата од акции
+        :rtype: list
+        """
+        return [node.action for node in self.path()[1:]]
+
+    def solve(self):
+        """Врати ја секвенцата од состојби за да се стигне од коренот до овој јазол.
+
+        :return: листа од состојби
+        :rtype: list
+        """
+        return [node.state for node in self.path()[0:]]
+
+    def path(self):
+        """Врати ја листата од јазли што го формираат патот од коренот до овој јазол.
+
+        :return: листа од јазли од патот
+        :rtype: list(Node)
+        """
+        x, result = self, []
+        while x:
+            result.append(x)
+            x = x.parent
+        return list(reversed(result))
+
+    """Сакаме редицата од јазли кај breadth_first_search или 
+       astar_search да не содржи состојби - дупликати, па јазлите што
+       содржат иста состојба ги третираме како исти. [Проблем: ова може
+       да не биде пожелно во други ситуации.]"""
+
+    def __eq__(self, other):
+        return isinstance(other, Node) and self.state == other.state
+
+    def __hash__(self):
+        return hash(self.state)
+
+
+"""
+Неинформирано пребарување во рамки на дрво.
+Во рамки на дрвото не разрешуваме јамки.
+"""
+
+def tree_search(problem, fringe):
+
+    fringe.append(Node(problem.initial))
+    while fringe:
+        node = fringe.pop()
+        print (node.state)
+        if problem.goal_test(node.state):
+            return node
+        fringe.extend(node.expand(problem))
+    return None
+
+
+def breadth_first_tree_search(problem):
+    return tree_search(problem, FIFOQueue())
+
+
+def depth_first_tree_search(problem):
+    return tree_search(problem, Stack())
+
+
+
+
+def graph_search(problem, fringe):
+    closed = {}
+    fringe.append(Node(problem.initial))
+    while fringe:
+        node = fringe.pop()
+        if problem.goal_test(node.state):
+            return node
+        if node.state not in closed:
+            closed[node.state] = True
+            fringe.extend(node.expand(problem))
+    return None
+
+
+def breadth_first_graph_search(problem):
+    return graph_search(problem, FIFOQueue())
+
+
+def depth_first_graph_search(problem):
+    return graph_search(problem, Stack())
+
+
+def uniform_cost_search(problem):
+    return graph_search(problem, PriorityQueue(lambda a, b: a.path_cost < b.path_cost))
+
+
+def depth_limited_search(problem, limit=50):
+
+    def recursive_dls(node, problem, limit):
+        cutoff_occurred = False
+        if problem.goal_test(node.state):
+            return node
+        elif node.depth == limit:
+            return 'cutoff'
+        else:
+            for successor in node.expand(problem):
+                result = recursive_dls(successor, problem, limit)
+                if result == 'cutoff':
+                    cutoff_occurred = True
+                elif result != None:
+                    return result
+        if cutoff_occurred:
+            return 'cutoff'
+        else:
+            return None
+
+
+    return recursive_dls(Node(problem.initial), problem, limit)
+
+
+def iterative_deepening_search(problem):
+
+    for depth in range(sys.maxint):
+        result = depth_limited_search(problem, depth)
+        if result is not 'cutoff':
+            return result
+
+
+
+"""
+--------------------------------------------------------------------------------------------------
+PRIMER 1 : PROBLEM SO DVA SADA SO VODA
+OPIS: 
+Dadeni se dva sada J0 i J1 so kapaciteti C0 i C1. Na pocetok dvata sada se polni. Inicijalnata 
+sostojba moze da se prosledi na pocetok. Problemot e kako da se stigne do sostojba vo koja J0 
+ke ima G0 litri, a J1 ke ima G1 litri. 
+AKCII:
+1. Da se isprazni bilo koj od sadovite
+2. Da se prefrli tecnosta od eden sad vo drug so toa sto ne moze da se nadmine kapacitetot na 
+sadovite
+Moze da ima i opcionalen tret vid na akcii 3. Napolni bilo koj od sadovite (studentite da ja 
+implementiraat ovaa varijanta)
+--------------------------------------------------------------------------------------------------
+"""
+class WJ(Problem):
+    """STATE: Torka od oblik (3,2) if jug J0 has 3 liters and J1 2 liters
+   Opcionalno moze za nekoj od sadovite da se sretne i vrednost '*' sto znaci deka e nebitno kolku ima vo toj sad
+   GOAL: Predefinirana sostojba do kade sakame da stigneme. Ako ne interesira samo eden sad za drugiot mozeme da stavime '*'
+   PROBLEM: Se specificiraat kapacitetite na sadovite, pocetna sostojba i cel """
+
+    def __init__(self, capacities=(5, 2), initial=(5, 0), goal=(0, 1)):
+        self.capacities = capacities
+        self.initial = initial
+        self.goal = goal
+
+    def goal_test(self, state):
+        """ Vraka true ako sostojbata e celna """
+        g = self.goal
+        return (state[0] == g[0] or g[0] == '*') and \
+               (state[1] == g[1] or g[1] == '*')
+
+    def successor(self, J):
+        """Vraka recnik od sledbenici na sostojbata"""
+        successors = dict()
+        J0, J1 = J
+        (C0, C1) = self.capacities
+        if J0 > 0:
+            Jnew = 0, J1
+            successors['dump jug 0'] = Jnew
+        if J1 > 0:
+            Jnew = J0, 0
+            successors['dump jug 1'] = Jnew
+        if J1 < C1 and J0 > 0:
+            delta = min(J0, C1 - J1)
+            Jnew = J0 - delta, J1 + delta
+            successors['pour jug 0 into jug 1'] = Jnew
+        if J0 < C0 and J1 > 0:
+            delta = min(J1, C0 - J0)
+            Jnew = J0 + delta, J1 - delta
+            successors['pour jug 1 into jug 0'] = Jnew
+        return successors
+
+    def actions(self, state):
+        return self.successor(state).keys()
+
+    def result(self, state, action):
+        possible = self.successor(state)
+        return possible[action]
+
+
+#
+#    WJInstance = WJ((5, 2), (5, 2), ('*', 1))
+#    print WJInstance
+#
+#    answer1 = breadth_first_tree_search(WJInstance)
+#    print answer1.solve()
+#
+#    answer2 = depth_first_tree_search(WJInstance) #vnimavajte na ovoj povik, moze da vleze vo beskonecna jamka
+#    print answer2.solve()
+#
+#    answer3 = breadth_first_graph_search(WJInstance)
+#    print answer3.solve()
+#
+#    answer4 = depth_first_graph_search(WJInstance)
+#    print answer4.solve()
+#
+#    answer5 = depth_limited_search(WJInstance)
+#    print answer5.solve()
+#
+#    answer6 = iterative_deepening_search(WJInstance)
+#    print answer6.solve()
+
+class Covece(Problem):
+
+
+    def __init__(self, initial, goal=None):
+
+        self.initial = initial
+        self.goal = goal
+
+    def pomestiPrepreka1(self, state):
+        p1 = state[1]
+        nasoka = state[1][2]
+        # ako se naoga kraj levo
+        if p1[0][1] == 1:
+            return (3, 2), (3, 3), 1
+        # ako se naoga kraj desno
+        elif p1[0][1] == 5:
+            return (3, 4), (3, 5), -1
+        else:
+            return (p1[0][0], p1[0][1] + nasoka), (p1[1][0], p1[1][1] + nasoka), nasoka
+
+    def pomestiPrepreka2(self, state):
+        p2 = state[2]
+        nasoka = state[2][4]
+        k1 = p2[0]
+        k2 = p2[1]
+        k3 = p2[2]
+        k4 = p2[3]
+        # ako se naoga gore desno
+        if p2[0][0] == 6:
+            return (7, 4), (7, 5), (8, 4), (8, 5), 1
+        elif p2[0][0] == 10:
+            return (9, 2), (9, 3), (10, 2), (10, 3), -1
+        else:
+            return (k1[0] + nasoka, k1[1] - nasoka), (k2[0] + nasoka, k2[1] - nasoka), \
+            (k3[0] + nasoka, k3[1] - nasoka), (k4[0] + nasoka, k4[1] - nasoka), nasoka
+
+    def pomestiPrepreka3(self, state):
+        p3 = state[3]
+        k1 = p3[0]
+        k2 = p3[1]
+        nasoka = p3[2]
+        # ako se naoga gore
+        if k1[0] == 6:
+            return (7, k1[1]), (8, k2[1]), 1
+        # ako se naoga dolu
+        elif k1[0] == 10:
+            return (9, 9), (10, 9), -1
+        else:
+            return (k1[0] + nasoka, 9), (k2[0] + nasoka, 9), nasoka
+
+    def proveriDozvolenaSostojba(self, state):
+        covek = list(state[0])
+        kocki = list(state[1])[0:2] + list(state[2])[0:4] + list(state[3])[0:2]
+
+        for r, k in kocki:
+            if covek[0] == r and covek[1] == k:
+                return False
+
+        if covek[0] < 1 or covek[0] > 11:
+            return False
+        if covek[1] < 1 or covek[1] > 11:
+            return False
+        if covek[0] < 6 < covek[1]:
+            return False
+
+        return True
+
+    def successor(self, state):
+
+        succs = dict()
+        covek = state[0]
+        p1 = self.pomestiPrepreka1(state)
+        p2 = self.pomestiPrepreka2(state)
+        p3 = self.pomestiPrepreka3(state)
+
+        # levo
+        newState = (covek[0], covek[1] - 1), p1, p2, p3
+        if self.proveriDozvolenaSostojba(newState):
+            succs["Levo"] = newState
+
+        # nagore
+        newState = (covek[0] - 1, covek[1]), p1, p2, p3
+        if self.proveriDozvolenaSostojba(newState):
+            succs["Gore"] = newState
+
+        # desno
+        newstate = (covek[0], covek[1] + 1), p1, p2, p3
+        if self.proveriDozvolenaSostojba(newstate):
+            succs["Desno"] = newstate
+
+        # dolu
+        newState = (covek[0] + 1, covek[1]), p1, p2, p3
+        if self.proveriDozvolenaSostojba(newState):
+            succs["Dolu"] = newState
+
+        return succs
+
+    def actions(self, state):
+
+        return self.successor(state).keys()
+
+    def result(self, state, action):
+
+        return self.successor(state)[action]
+
+    def goal_test(self, state):
+
+        covek = state[0]
+        return covek[0] == self.goal[0] and covek[1] == self.goal[1]
+
+    def path_cost(self, c, state1, action, state2):
+
+        return c + 1
+
+    def value(self):
+
+        raise NotImplementedError
+
+
+initial = (CoveceRedica, CoveceKolona), ((3, 3), (3, 4), -1), ((8, 3), (8, 4), (9, 3), (9, 4), -1), ((8, 9), (9, 9), 1)
+goal = KukaRedica, KukaKolona
+
+problem = Covece(initial, goal)
+
+answer = breadth_first_graph_search(problem)
+
+print(answer.solution())
