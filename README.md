@@ -133,4 +133,14 @@ M (8,19)<br />
      6   Hauki    Jaedda     Pike           Esox lucius
      7   Ahven    Abborre    Perch          Perca fluviatilis
 ```
-
+Дадени се следните атрибути:
+```
+    0  Weight      Weight of the fish (in grams)
+    1  Length1     Length from the nose to the beginning of the tail (in cm)
+    2  Length2     Length from the nose to the notch of the tail (in cm)
+    3  Length3     Length from the nose to the end of the tail (in cm)
+    4  Height%     Maximal height as % of Length3
+    5  Width%      Maximal width as % of Length3
+```
+Класата е дадена во последната колона.<br />
+Да се направи модел за класификација за даденото податочно множество. За тренинг да се земат само првите 5 примероци од секоја од класите во множеството. Притоа ова да се направи во програмата, а не со рачно копирање! Да се класифицира елементот од податочното множество даден на влез и да се испечати предвидувањето. Елементот е даден со индексот од податочното множество.
